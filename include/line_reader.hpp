@@ -13,14 +13,14 @@ public:
 public:
 	// under windows, to read line by mmf is much faster than by stream.
 	// under linux, set use_win32_mmf as false automatically.
-	inline bool open(_in const std::string& path, _in bool use_win32_mmf){
+	inline void open(_in const std::string& path, _in bool use_win32_mmf){
 		close();
 	#ifndef _WIN32
 		use_win32_mmf = false;
 	#endif
 		this->use_win32_mmf = use_win32_mmf;
-		if (this->use_win32_mmf) return open_by_mmf(path);
-		return open_by_stream(path);
+		if (this->use_win32_mmf) open_by_mmf(path);
+		else open_by_stream(path);
 	}
 
 	inline void close(void){
@@ -48,17 +48,12 @@ protected:
 	bool eof_ = false;
 
 protected:
-	inline bool open_by_stream(_in const std::string& path) try {
+	inline void open_by_stream(_in const std::string& path) {
 		// close first
 		close_by_stream();
 		
 		// open
 		file.open(path, std::fstream::in);
-		if (not file) throw std::runtime_error(F1("fail to open: %0.", path));
-		if (file.fail()) throw std::runtime_error(F1("fail to open: %0.", path));
-		return true;
-	} catch (...) {
-		return false;
 	}
 
 	inline bool readline_by_stream(_out std::string& line) try {
@@ -79,32 +74,22 @@ protected:
 	std::fstream file;
 
 protected:
-	inline bool open_by_mmf(_in const std::string& path) {
+	inline void open_by_mmf(_in const std::string& path) {
 #ifdef _WIN32
-		bool ret = false;
-
 		// close first
 		close_by_mmf();
 
 		h = ::CreateFileA(path.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-		if (INVALID_HANDLE_VALUE == h) goto FINAL;
+		if (INVALID_HANDLE_VALUE == h) { close(); throw std::runtime_error(F1("fail to ::CreateFile, %0.", path)); }
 
 		size = ::GetFileSize(h, NULL);
-		if (INVALID_FILE_SIZE == size) goto FINAL;
+		if (INVALID_FILE_SIZE == size) { close(); throw std::runtime_error(F1("fail to ::GetFileSize, %0.", path)); }
 
 		m = ::CreateFileMappingA(h, NULL, PAGE_READONLY, 0, size, NULL);
-		if (not m) goto FINAL;
+		if (not m) { close(); throw std::runtime_error(F1("fail to ::CreateFileMappingA, %0.", path)); }
 
 		data = ::MapViewOfFile(m, FILE_MAP_READ, 0, 0, 0);
-		if (not data) goto FINAL;
-
-		ret = true;
-
-	FINAL:
-		if (not ret) close_by_mmf();
-		return ret;
-#else
-		return false;
+		if (not data) { close(); throw std::runtime_error(F1("fail to ::CreateFile, %0.", path)); }
 #endif
 	}
 
@@ -146,6 +131,5 @@ protected:
 	void* data = nullptr;
 	size_t mmf_first = 0;
 };
-
 
 #endif // HEADER_LINE_READER_HPP

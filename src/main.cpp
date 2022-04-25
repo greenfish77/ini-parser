@@ -7,8 +7,16 @@ int main(int argc, const char** argv) try {
 	info("***********");
 	info("* started *");
 	info("***********");
-
 	if (argc != 2) throw std::exception("ini_parser.exe <ini_file_path>.");
+	info("ini file: {0}", {argv[1]});
+
+	line_reader f;
+	std::string l;
+	f.open(argv[1], true);
+	for (;;) {
+		if (not f.readline(l)) break;
+		info("line: {0}", {l});
+	}
 
 	return 0;
 } catch (std::exception& e) {
