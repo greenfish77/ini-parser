@@ -27,9 +27,14 @@
 #include <mutex>
 #include <variant>
 #include <optional>
+#include <fstream>
 
+#include "define.h"
+#include "exception.hpp"
+#include "format.hpp"
 #include "logger.hpp"
 #include "insert_order_map.hpp"
+#include "line_reader.hpp"
 #include "ini_parser.hpp"
 
 #endif // HEADER_HEADERS_HPP
